@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paid Flashcard Generator</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  </head>
+  <body>
+    <h1>Paid Flashcard Generator</h1>
+    <input
+      type="text"
+      id="mainSubject"
+      placeholder="Main subject (e.g., Biology)"
+    />
+    <br /><br />
+    <input
+      type="text"
+      id="specificTopic"
+      placeholder="Specific topic (e.g., Cell Division)"
+    />
+    <br /><br />
+    <select id="difficulty">
+      <option value="beginner">Beginner</option>
+      <option value="intermediate">Intermediate</option>
+      <option value="advanced">Advanced</option>
+    </select>
+    <br /><br />
+    <input
+      type="number"
+      id="quantity"
+      placeholder="Number of flashcards"
+      min="1"
+      max="20"
+    />
+    <br /><br />
+    <textarea
+      id="additionalInfo"
+      placeholder="Additional information or specific requirements..."
+      rows="4"
+      cols="50"
+    ></textarea>
+    <br /><br />
+    <button onclick="generatePaidFlashcards()" id="generateBtn">
+      Generate Paid Flashcards
+    </button>
+    <br /><br />
+    <p id="response">Response will appear here...</p>
+    <button onclick="saveFlashcards()" id="saveBtn" style="display: none">
+      Save Flashcards
+    </button>
+
+    <script>
+      // Initialize Firebase on the client side
+      fetch("/firebase-config")
+        .then((response) => response.json())
+        .then((firebaseConfig) => {
+          firebase.initializeApp(firebaseConfig);
+          window.db = firebase.firestore();
+        })
+        .catch((error) => console.error("Error initializing Firebase:", error));
+
+      function generatePaidFlashcards() {
+        const mainSubject = document.getElementById("mainSubject").value;
+        const specificTopic = document.getElementById("specificTopic").value;
+        const difficulty = document.getElementById("difficulty").value;
+        const quantity = document.getElementById("quantity").value;
+        const additionalInfo = document.getElementById("additionalInfo").value;
+        const generateButton = document.getElementById("generateBtn");
+        const responseElement = document.getElementById("response");
+
+        responseElement.innerText = "Generating paid flashcards...";
+
+        fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mainSubject,
+            specificTopic,
+            difficulty,
+            quantity,
+            additionalInfo,
+            isPaid: true,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.flashcards && Array.isArray(data.flashcards)) {
+              window.currentFlashcards = data.flashcards;
+              displayFlashcards(data.flashcards);
+              document.getElementById("saveBtn").style.display = "inline-block";
+            } else {
+              responseElement.innerText = "Error: Unexpected response format";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            responseElement.innerText =
+              "Error: Could not generate paid flashcards";
+          })
+          .finally(() => {
+            generateButton.disabled = false;
+          });
+      }
+
+      function displayFlashcards(flashcards) {
+        const responseElement = document.getElementById("response");
+        responseElement.innerHTML = "<h2>Paid Flashcards:</h2>";
+
+        flashcards.forEach((card, index) => {
+          responseElement.innerHTML += `
+            <div class="flashcard">
+              <h3>Card ${index + 1}</h3>
+              <p><strong>Question:</strong> ${card.question}</p>
+              <p><strong>Answer:</strong> ${card.answer}</p>
+            </div>
+          `;
+        });
+      }
+
+      async function saveFlashcards() {
+        const mainSubject = document.getElementById("mainSubject").value;
+        const specificTopic = document.getElementById("specificTopic").value;
+        const difficulty = document.getElementById("difficulty").value;
+        const quantity = document.getElementById("quantity").value;
+
+        try {
+          const docRef = await window.db.collection("paid_flashcards").add({
+            mainSubject,
+            specificTopic,
+            difficulty,
+            quantity,
+            cards: window.currentFlashcards,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+          console.log("Paid flashcards saved with ID: ", docRef.id);
+          alert("Paid flashcards saved successfully!");
+        } catch (error) {
+          console.error("Error saving paid flashcards: ", error);
+          alert("Error saving paid flashcards. Please try again.");
+        }
+      }
+    </script>
+  </body>
+</html>

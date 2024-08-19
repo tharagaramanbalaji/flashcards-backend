@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flashcard Generator</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <!-- Basic Input and Button setup -->
+    <button id="paidBtn"><a href="paid.html">Paid</a></button>
+    <br /><br />
+    <input
+      type="text"
+      id="mainSubject"
+      placeholder="Type topic for flashcards..."
+    />
+    <br /><br />
+
+    <input type="text" id="userquantity" placeholder="Number of flashcards" />
+    <br /><br />
+    <script type="module" src="/script.js"></script>
+    <button onclick="sendMessage()" id="sendBtn">Generate Flashcards</button>
+
+    <p id="response">Response will appear here...</p>
+    <button onclick="saveFlashcards()" id="saveBtn" style="display: none">
+      Save Flashcards
+    </button>
+    <script>
+      // Initialize Firebase on the client side
+      fetch("/firebase-config")
+        .then((response) => response.json())
+        .then((firebaseConfig) => {
+          firebase.initializeApp(firebaseConfig);
+          window.db = firebase.firestore();
+        })
+        .catch((error) => console.error("Error initializing Firebase:", error));
+    </script>
+  </body>
+</html>
